@@ -1,0 +1,172 @@
+Neste documentos estão descritas as etapas para a instalação do RunCodes em um único servidor. Importante salientar que, idealmente, ao menos 3 máquinas são necessárias já que o RunCodes foi conceitualmente desenvolvido em módulos.
+
+O documento intitulado Manual_Run_Codes_Single.pdf traz mais detalhes sobre a infraestrutura e funcionamento do RunCodes. Sugerimos como leitura complementar.
+
+Todos os módulos constituintes do RunCodes estão em imagens Docker. Pouca coisa precisa ser instalada fora disso. São necessários apenas o  "Docker" e  o "composer". O Processo descrito aqui foi executado num notebook 'básico' (i7, 16GB RAM, ao menos 30 GB de disco é recomendável ** as imagens das linguagens ocupam bastante espaço), Linux Mint 21.1.
+
+
+INSTALAÇÃO DO DOCKER:
+
+	>> Siga as instruções em: 
+
+	https://computingforgeeks.com/install-docker-docker-compose-on-linux-mint/
+
+	Eis os passos necessários:
+
+	a) sudo apt update
+	b) sudo apt -y install apt-transport-https ca-certificates curl software-properties-common
+	c) sudo apt -y remove docker docker-engine docker.io containerd runc
+	d) curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+	e) echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu jammy stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+	f) $ cat /etc/apt/sources.list.d/docker.list
+		deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu jammy stable
+
+	g) sudo apt update
+	h) sudo apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+	PRONTO. 
+
+	>> é muito importante, autorizar o docker a rodar sem acesso sudo. Faça:
+	a) sudo usermod -aG docker $USER
+
+	>> aconselho reiniciar a sua sessão linux, para atualizar o acesso em qq shell. Se preferir, no shell que irá usar, faça:
+	a) newgrp docker  
+
+
+INSTALAÇÃO DO "COMPOSER"
+
+	Parte do RunCodes foi desenvolvido em PHP. Composer é um gerenciados de dependências para PHP
+	Faça:
+	a) sudo apt-get install composer
+
+
+CLONANDO RUNCODES NO GITHUB
+
+	É interessante usar uma IDE para desenvolvimento/manutenção do código. Uso Visual Studio Code.
+	Nele, criei um novo 'projeto', intitulado Runcodes. Deste ponto em diante, os comandos foram executados a partir de um shell aberto dentro da IDE, no diretório "Runcodes". 
+
+	O repositório público do RunCodes é: https://github.com/runcodes-icmc
+
+	Clone os seguinte repositórios:
+
+	a) git clone git@github.com:runcodes-ICMC/server.git
+	b) git clone git@github.com:runcodes-ICMC/compiler-engine.git
+	c) git clone git@github.com:runcodes-ICMC/compiler-images.git
+	d) git clone git@github.com:runcodes-ICMC/compiler-monitor.git
+	e) git clone git@github.com:runcodes-ICMC/database.git
+
+NOTAS SOBRE GHCR.IO
+
+	Lembre-se que o run.codes roda tudo em imagens docker. Tudo mesmo: o banco de dados (usuários, disciplinas, etc), o compiler (engine e linguagens) e o server (backend e front). O Container registry permite que vc associe imagens dockers ao repositórios. Veja os Makefiles em cada um dos repositórios principais (server, engine, images, database, etc). Por meio do registry, vc pode fazer operação docker (pull, push, build images diretamente do github).
+
+	O que é o Container Registry?? (retirado do github..)
+ 		>> The Container registry stores container images within your organization or personal account, and allows you to associate an image with a repository. You can choose whether to inherit permissions from a repository, or set granular permissions independently of a repository. You can also access public container images anonymously.
+
+ 	Como os repositórios do RunCodes acima listados são agora públicos, não é necessário configurar acesso ao ghcr.io. Caso tenha curiosidade em descobrir mais, acesse:  https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+
+
+COMPOSER E DEPENDÊNCIAS DAS IMAGENS DOCKER
+
+
+ 	Veja que o runcodes AINDA emprega php e cake, em versões antigas, descontinuadas.. Então, o 'composer install' garante que serão copiados os pacotes corretos (e demais dependencias necessárias)para a criação das imagens... Como provavelmente você vai querer fazer modificações no seu próprio código, faça: 
+
+ 	a) cd server/src (lembre-se que vc está no diretório 'Runcodes')
+ 	b) composer install --ignore-platform-reqs
+ 	>> se este comando indicar erros, tente:
+ 	c) composer install --ignore-platform-req=ext-mcrypt --ignore-platform-req=ext-zip --ignore-platform-req=ext-pdo_pgsql --ignore-platform-req=ext-gd --ignore-platform-req=ext-curl
+
+	Neste ponto, o composer garante que serão instalados os pacotes corretos (e demais dependencias necessárias) para a criação das imagens Docker. A principal utilidade do composer é para desenvolvimento. s libs que ele instala localmente permite que se rode o projeto fora do Docker (o que é raro). O composer ajuda a IDE/editor entender quais libs estão presentes.
+
+
+CRIAÇÃO DAS IMAGENS DOCKER DO RUNCODES (server e compiler engine)
+
+	Para executar o Runcodes, suba as imagens localmente. Faça:
+
+	a) cd ..     (raiz do repositório 'server')
+	b) docker compose up --build -d
+	>> para verificar os containers 'no ar', faça:
+	a) docker ps 
+
+	As imagens serão compiladas e os containers já estarão no 'ar'. Para ve-los, faça:
+	a) docker ps
+
+	Veja que serão gerados os seguintes containers:
+
+	✔ Container server-database-1  Started
+	✔ Container server-seaweed-1   Started
+	✔ Container server-app-1       Started
+	✔ Container server-caddy-1     Started
+	✔ Container server-redis-1     Started
+	✔ Container server-smtp4dev-1  Started
+
+	Neste momento, o RunCodes já está rodando: http://localhost:8080 
+	NOTA: a versão https requer alguns ajustes, já que dependo do domínio hospedado. Portanto, este 
+	deploy via docker disponibiliza apenas acesso http.
+
+	Os containers acima revelam (em partes) a estruturação do novo RunCodes. O container "server-database-1" é o banco de dados (postgres); O container "server-seaweed-1" substitui o serviço de storage AWS (S3) que equipava o RunCodes original. O SeaWeed provê uma API compatível aos serviços da AWS (código aberto, sem custos). A aplicação de fato está no container "server-app-1". Este container equivale ao front/backend da aplicação, exceto a funcionalidade de compilação e linguagens. "server-caddy-1" é o servidor web. "server-redis-1" é o gerenciador de cache e sessões que o RunCodes usa. O container "server-smtp4dev-1" é um servidor smtp para envio de emails.
+
+	As instruções para criação da imagens/containers docker pelo comando "docker compose up --build -d" estão no arquivo "docker-compose.yml", presente no diretório local. No entanto, há 2 arquivos desta natureza no diretório 'server': "docker-compose.yml" e "docker-compose.full.yml". A diferença entre ambos, é que na versão 'full' existe um container a mais: o motor de compilação (rcc).
+
+
+	Existe uma razão para disponibilizarmos duas versões. A versão não 'full' coloca a aplicação no ar, mas sem a funcionalidade de compilação. Neste modo, é possível testar o frontend e fazer modificações. Ao modificar o frontend, bastaria reconstruir o container pertinente 'app' com o comando "docker compose up app --build -d".
+
+	Já a versão 'full' (docker-compose.full.yml) acrescenta o motor de compilação (compiler engine) e corresponde ao container 'rcc'. O Compiler Engine (escrito em python) é o responsável por (quase) tudo que diz respeito a compilação: executar o código, confrontar as entradas dos casos de testes com as saídas produzidas, etc. 
+
+	Para colocar este modo 'no ar', faça:
+	a) docker compose  down
+	b) docker compose -f docker-compose.full.yml up --build -d
+	
+	Agora temos um container adicional:
+
+	✔ Container server-rcc-1       Started
+
+	Para parar o serviço, faça:
+	a) docker compose -f docker-compose.full.yml down
+
+
+CRIAÇÃO DAS IMAGENS DOCKER DAS LINGUAGENS (compiler-images)
+
+	Cada linguagem do RunCodes é uma imagem docker. Ao contrário das imagens server e compiler engine, cujos containers estão sempre em execução, os containers das linguagens são 'efêmeros'. É responsabilidade do Compiler Engine subir o container da respectiva linguagem para cada caso de teste executado. Terminada a compilação, o container é destruído.
+
+	Portanto, tudo que temos a fazer aqui é construir as imagens docker para cada linguagem. Faça:
+
+	a) cd compiler-images
+	b) make all 
+
+	Este processo é lento e requer bastante espaço em disco.  Vc pode alterar o Makefile e compilar somente as linguagens que achar mais conveniente. 
+
+MONITOR
+
+	O Monitor é um programa em c que observa a execução de cada código fonte. Na suspeita de qq uso/acesso indevido a memória ou processos externos, derruba o container. 
+
+
+NOTAS FINAIS
+
+	1) O RunCodes é implementado em php 5.4, descontinuado. Pretendemos atualizar. Mas enquanto isso não acontece, observamos que de tempos em tempos, o servidor para de responder e o consumo de RAM aumenta sem motivo aparente. Suspeitamos se tratar de algum 'memory leak'. A sugestão é colocar no crontab a reinicialização do container app e rcc a cada 3 dias. Esta estimativa é meamente empírica e depende da demanda. Faça:
+	a) docker compose -f docker-compose.full.yml down
+	b) docker compose -f docker-compose.full.yml up --build -d
+
+	2) Muitas vezes é  útil monitorar os containers. Faça:
+		>>  docker compose logs --follow
+
+	3) Para logar no RunCodes, vc pode alterar os esquemas do Banco de Dados. Por default, deixamos alguns usuário previamente cadadastrados (a senha usada está indicada como comentário no esquema). Veja em 'database' o arquivo "development.sql". Acrescente ali os usuários e universidades que achar necessários. 
+
+	4) Em breve faremos um outro manual de instalação para a versão multi server (várias VMs), como a que temos aqui no ICMC.
+
+
+AUTORES
+	- Joao E.S. Batista Neto
+	- Daniel Lélis
+
+
+
+
+
+
+
+
+
+
+
+
+
