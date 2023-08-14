@@ -1,0 +1,116 @@
+version: "3.7"
+
+services:
+  # Caddy reverse proxy to communicate with the outside world
+  # This guy is responsible for SSL termination and routing
+  # It also serves the static files and proxies the requests
+  # to the appropriate services
+  caddy:
+    image: ghcr.io/runcodes-icmc/server-caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Caddyfile is the configuration file for Caddy
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - runcodes-net
+    environment:
+      RUNCODES_CONTACT_EMAIL: ${RC_CONTACT_EMAIL}
+
+  # This is the run.codes server itself, running through PHP-FPM
+  app:
+    image: ghcr.io/runcodes-icmc/server:latest
+    restart: unless-stopped
+    networks:
+      - runcodes-net
+    environment:
+      RUNCODES_PROFILE: "production"
+      RUNCODES_EMAIL_PROFILE: "env"
+      RUNCODES_EMAIL_SMTP_HOST: ${RC_SMTP_HOST}
+      RUNCODES_EMAIL_SMTP_PORT: ${RC_SMTP_PORT}
+      RUNCODES_EMAIL_SMTP_USER: ${RC_SMTP_USER}
+      RUNCODES_EMAIL_SMTP_PASSWORD: ${RC_SMTP_PASSWORD}
+      RUNCODES_EMAIL_SENDER_ADDRESS: ${RC_EMAIL_SENDER_ADDRESS}
+      RUNCODES_EMAIL_SENDER_NAME: ${RC_EMAIL_SENDER_NAME}
+      RUNCODES_S3_ENDPOINT: "http://seaweed:8333"
+      RUNCODES_S3_REGION: "sa-east-1"
+      RUNCODES_S3_CREDENTIALS_KEY: ${RC_SEAWEED_KEY}
+      RUNCODES_S3_CREDENTIALS_SECRET: ${RC_SEAWEED_SECRET}
+      RUNCODES_S3_BUCKET_PREFIX: "runcodes"
+      RUNCODES_DB_HOST: "database"
+      RUNCODES_DB_PORT: "5432"
+      RUNCODES_DB_USERNAME: "runcodes"
+      RUNCODES_DB_PASSWORD: ${RC_DB_PASSWORD}
+      RUNCODES_DB_DATABASE: "runcodes"
+      RUNCODES_DB_SCHEMA: "public"
+      RUNCODES_REDIS_HOST: "redis"
+      RUNCODES_REDIS_PORT: "6379"
+      RUNCODES_CONTACT_EMAIL: ${RC_CONTACT_EMAIL}
+      RUNCODES_SECURITY_SALT: ${RC_SECURITY_SALT}
+      RUNCODES_SECURITY_CIPHER_SEED: ${RC_SECURITY_CIPHER_SEED}
+      RUNCODES_DOMAIN: "https://${RC_APP_DOMAIN}"
+      RUNCODES_S3_PUBLIC_ENDPOINT: "https://${RC_FILES_DOMAIN}"
+
+  # This is the run.codes compiler engine, which handles the submissions
+  # It requires access to the docker socket to spawn new containers
+  rcc:
+    image: ghcr.io/runcodes-icmc/compiler-engine:latest
+    restart: unless-stopped
+    volumes:
+      # The docker socket is required to spawn new containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # The temporary directory is used to store the submissions
+      - /tmp:/tmp
+    environment:
+      RUNCODES_S3_ENDPOINT: "http://seaweed:8333"
+      RUNCODES_S3_REGION: "sa-east-1"
+      RUNCODES_S3_CREDENTIALS_KEY: ${RC_SEAWEED_KEY}
+      RUNCODES_S3_CREDENTIALS_SECRET: ${RC_SEAWEED_SECRET}
+      RUNCODES_S3_BUCKET_PREFIX: "runcodes"
+      RUNCODES_DB_HOST: "database"
+      RUNCODES_DB_PORT: "5432"
+      RUNCODES_DB_USERNAME: "runcodes"
+      RUNCODES_DB_PASSWORD: ${RC_DB_PASSWORD}
+      RUNCODES_DB_DATABASE: "runcodes"
+      RUNCODES_DB_SCHEMA: "public"
+    networks:
+      - runcodes-net
+
+  # The main database for the application (PostgreSQL with initial schema)
+  database:
+    image: ghcr.io/runcodes-icmc/database:latest-development
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=${RC_DB_PASSWORD}
+      - RUNCODES_PASSWORD=${RC_DB_PASSWORD}
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    networks:
+      - runcodes-net
+
+  # The Redis database
+  # It is used for caching, session management and indexing
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./redis:/data
+    networks:
+      - runcodes-net
+
+  # SeaweedFS instance
+  # This is the file storage system used by the application (S3 compatible)
+  # It is used to store the submissions and results
+  seaweed:
+    image: chrislusf/seaweedfs
+    command: server -s3 -s3.config=/etc/seaweedfs/s3-config.json -volume.max=${RC_SEAWEED_MAX_VOLUMES} -dir="/data" -master.volumeSizeLimitMB=${RC_SEAWEED_VOLUME_SIZE_LIMIT} -ip=seaweed -ip.bind=0.0.0.0
+    volumes:
+      - ./seaweed:/data
+      - ./s3-config.json:/etc/seaweedfs/s3-config.json
+    networks:
+      - runcodes-net
+
+networks:
+  runcodes-net:

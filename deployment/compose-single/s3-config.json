@@ -1,0 +1,21 @@
+{
+    "identities": [
+      {
+        "name": "general",
+        "credentials": [
+          {
+            "accessKey": "changeme",
+            "secretKey": "changeme"
+          }
+        ],
+        "actions": [
+          "Admin",
+          "Read",
+          "List",
+          "Tagging",
+          "Write"
+        ]
+      }
+    ]
+  }
+  

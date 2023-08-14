@@ -1,0 +1,48 @@
+# Disable HTTPS redirects
+# {
+#     auto_https disable_redirects
+# }
+
+# Hosting (main domain)
+{$RC_APP_DOMAIN} {
+    # Let's Encrypt TLS config
+    tls {$RC_CONTACT_EMAIL}
+
+    # Self-signed TLS
+    # tls internal
+
+
+    # Handle Seaweed files through a single domain
+    handle_path /seaweed/* {
+        reverse_proxy "seaweed:8333" {
+            # Don't forget to update the host header to match the target
+            header_up Host "{$RC_APP_DOMAIN}"
+        }
+    }
+
+    # Main Server
+    handle {
+        root * /srv/public
+        encode zstd gzip
+        php_fastcgi "app:9000" {
+            root /var/www/runcodes/app/webroot/
+        }
+        file_server
+    }
+}
+
+# Hosting (files domain)
+# {$RC_FILES_DOMAIN} {
+#     # Let's Encrypt TLS config
+#     tls {$RC_CONTACT_EMAIL}
+
+#     # Self-signed TLS
+#     # tls internal
+
+#     encode zstd gzip
+
+#     reverse_proxy "seaweed:8333" {
+#         # Don't forget to update the host header to match the target
+#         header_up Host "{$RC_FILES_DOMAIN}"
+#     }
+# }
