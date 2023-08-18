@@ -17,7 +17,9 @@ services:
     networks:
       - runcodes-net
     environment:
-      RUNCODES_CONTACT_EMAIL: ${RC_CONTACT_EMAIL}
+      RC_APP_DOMAIN: ${RC_APP_DOMAIN}
+      RC_FILES_DOMAIN: ${RC_FILES_DOMAIN}
+      RC_CONTACT_EMAIL: ${RC_CONTACT_EMAIL}
 
   # This is the run.codes server itself, running through PHP-FPM
   app:
