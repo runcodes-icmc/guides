@@ -16,7 +16,7 @@
     handle_path /seaweed/* {
         reverse_proxy "seaweed:8333" {
             # Don't forget to update the host header to match the target
-            header_up Host "{$RC_APP_DOMAIN}"
+            header_up Host "seaweed"
         }
     }
 
@@ -43,6 +43,6 @@
 
 #     reverse_proxy "seaweed:8333" {
 #         # Don't forget to update the host header to match the target
-#         header_up Host "{$RC_FILES_DOMAIN}"
+#         header_up Host "seaweed"
 #     }
 # }
