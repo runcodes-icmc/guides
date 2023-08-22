@@ -16,6 +16,8 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
     networks:
       - runcodes-net
+    depends_on:
+      - app
     environment:
       RC_APP_DOMAIN: ${RC_APP_DOMAIN}
       RC_FILES_DOMAIN: ${RC_FILES_DOMAIN}
@@ -27,6 +29,8 @@ services:
     restart: unless-stopped
     networks:
       - runcodes-net
+    depends_on:
+      - database
     environment:
       RUNCODES_PROFILE: "production"
       RUNCODES_EMAIL_PROFILE: "env"
@@ -65,6 +69,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       # The temporary directory is used to store the submissions
       - /tmp:/tmp
+    depends_on:
+      - database
     environment:
       RUNCODES_S3_ENDPOINT: "http://seaweed:8333"
       RUNCODES_S3_REGION: "sa-east-1"
