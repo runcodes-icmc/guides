@@ -246,3 +246,14 @@ Due to some unsolved bugs, it is recommended to setup some jobs to run periodica
 This isn't a very well defined step, as it will wildly vary depending on your setup and necessities. But,
 if it is important for you to have backups, you should probably look into it. The main directories you
 should backup are: `/opt/run.codes/seaweed` (uploads) and `/opt/run.codes/postgres` (database).
+
+### Step 6: Default admin user
+
+By default, the application will create a user with the following credentials:
+
+- E-mail: `admin@admin`
+- Password: `?6MgoQik`
+
+With it, you'll be able to setup the application and create other users, professors and administrators.
+
+Make sure to change the password and e-mail of this user as soon as possible.
