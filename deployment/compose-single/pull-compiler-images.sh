@@ -13,6 +13,7 @@ images=(
     "pascal"
     "portugol"
     "python"
+    "octave"
     "r"
     "rust"
 )
