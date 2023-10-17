@@ -7,6 +7,7 @@ image_suffix=":latest"
 images=(
     "c"
     "cpp"
+    "dotnet"
     "fortran"
     "haskell"
     "java"
