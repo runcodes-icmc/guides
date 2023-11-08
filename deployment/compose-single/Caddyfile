@@ -6,7 +6,7 @@
 # Hosting (main domain)
 {$RC_APP_DOMAIN} {
     # Let's Encrypt TLS config
-    tls {$RC_CONTACT_EMAIL}
+    # tls {$RC_CONTACT_EMAIL}
 
     # Self-signed TLS
     # tls internal
