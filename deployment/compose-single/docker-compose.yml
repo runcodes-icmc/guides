@@ -90,7 +90,7 @@ services:
 
   # The main database for the application (PostgreSQL with initial schema)
   database:
-    image: ghcr.io/runcodes-icmc/database:latest-development
+    image: ghcr.io/runcodes-icmc/database:1.8-development
     restart: unless-stopped
     environment:
       TZ: "America/Sao_Paulo"
@@ -115,7 +115,7 @@ services:
   # This is the file storage system used by the application (S3 compatible)
   # It is used to store the submissions and results
   seaweed:
-    image: chrislusf/seaweedfs
+    image: chrislusf/seaweedfs:3.47
     command: server -s3 -s3.config=/etc/seaweedfs/s3-config.json -volume.max=${RC_SEAWEED_MAX_VOLUMES} -dir="/data" -master.volumeSizeLimitMB=${RC_SEAWEED_VOLUME_SIZE_LIMIT} -ip=seaweed -ip.bind=0.0.0.0
     volumes:
       - ./seaweed:/data
